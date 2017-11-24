@@ -16,16 +16,16 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 session = ""
-
+user_agent = {'User-agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0'}
 
 def test_bleed(url, args):
 
     if args.cookie:
         session = args.cookie
 
-        r = requests.options(url , cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''}, verify=False)
+        r = requests.options(url , headers = user_agent , cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''}, verify=False)
     else:
-        r = requests.options(url , verify=False)
+        r = requests.options(url , headers = user_agent , verify=False)
 
 
     raw_headers = r.headers
