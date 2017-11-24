@@ -5,6 +5,8 @@ This is a proof of concept code to test for the
 [Optionsbleed](https://blog.fuzzing-project.org/60-Optionsbleed-HTTP-OPTIONS-method-can-leak-Apaches-server-memory.html)
 bug in Apache httpd (CVE-2017-9798).
 
+Modified by MickCue: Uses requests and supports cookies to test authenticated URLs. 
+
 usage
 =====
 
@@ -21,6 +23,7 @@ optional arguments:
   -n N         number of tests (default 10)
   -a, --all    show headers from hosts without problems
   -u, --url    pass URL instead of hostname
+  -c, --cookie Pass cookie value e.g. -c Session=53454bfgb
 
 Tests server for Optionsbleed bug and other bugs in the allow header.
 
