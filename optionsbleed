@@ -10,7 +10,6 @@ import argparse
 import re
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-import os
 
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -83,18 +82,7 @@ args = parser.parse_args()
 howoften = int(args.n[0])
 
 
-dup = []
-
-# Note: This disables warnings about the lack of certificate verification.
-# Usually this is a bad idea, but for this tool we want to find vulnerabilities
-# even if they are shipped with invalid certificates.
-#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-#pool = urllib3.PoolManager(10, cert_reqs='CERT_NONE')
-
 if args.url:
-    #print(args.cookie)
-    #print("How Often:"+str(howoften))
     if howoften is 10:
         howoften = 40
     for i in range(howoften):
