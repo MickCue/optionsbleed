@@ -15,11 +15,12 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 #{major}.{minor}.{build}.{patch}
-__version__ = '0.1'
+__version__ = '0.2'
 logo = """
  __  __ ___  __      __ __     __ __ __             
 /  \|__) | |/  \|\ |(_ |__)|  |_ |_ |  \   _|_  _|_ 
 \__/|    | |\__/| \|__)|__)|__|__|__|__/    |    |  
+
 """+__version__+"""
 """
 
@@ -28,10 +29,34 @@ session = ""
 user_agent = {'User-agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0'}
 http_methods = ["DELETE","TRACE","TRACK","CONNECT","PROPFIND","PROPPATCH","MKCOL","COPY","MOVE",
 "LOCK","UNLOCK","VERSION-CONTROL","REPORT","CHECKOUT","CHECKIN","UNCHECKOUT","MKWORKSPACE","UPDATE","LABEL",
-"MERGE","BASELINE-CONTROL","OPTIONS","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH","ARBITRARY]"]
+"MERGE","BASELINE-CONTROL","OPTIONS","MKACTIVITY","ORDERPATCH","ACL","PATCH","SEARCH","ARBITRARY"]
 fail = []
+clickjacking_flag  = False
+http_methods_flag = False
+optionsbleed_flag = False
+
+
+def summary():
+    print("********************************")
+    print("Summary of findings for '"+args.hosttocheck+"'")
+    print("")     
+    if clickjacking_flag == True:
+        print("+ Clickjacking")
+    if http_methods_flag == True:
+        if len(fail) > 1:
+            print("+ HTTP Methods (Found "+str(len(fail))+" vulnerable methods)")
+        else:
+            print("+ HTTP Methods (Found "+str(len(fail))+" vulnerable method)")
+    if optionsbleed_flag == True:
+        print("+ Optionsbleed")
+    elif clickjacking_flag != True and http_methods_flag != True and optionsbleed_flag != True:
+        print("No issues found")
+
 
 def test_methods(url, args):
+    global clickjacking_flag
+    global http_methods_flag
+    global optionsbleed_flag
    
 
     if args.cookie:
@@ -44,11 +69,14 @@ def test_methods(url, args):
         for method in http_methods:
 
             req = requests.request(method.lower(), args.hosttocheck, cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''},  verify=False)
+            if dict(req.headers).get("x-frame-options") is None: # Clickjacking check
+                clickjacking_flag = True
+
             if req.status_code == 200:
                 fail.append(method.lower())
 
             percentage_completed = ( count_down / count * 100 / 1 )
-            print(str(round(percentage_completed))+"% completed")
+            print(str(round(percentage_completed))+"% completed:"+method)
             count_down += 1
 
 
@@ -60,25 +88,25 @@ def test_methods(url, args):
 
 
         for method in http_methods:
-
             req = requests.request(method.lower(), args.hosttocheck, verify=False)
+            if dict(req.headers).get("x-frame-options") is None: # Clickjacking check
+                clickjacking_flag = True
             if req.status_code == 200:
                 fail.append(method.lower())
 
             percentage_completed = ( count_down / count * 100 / 1 )
-            print(str(round(percentage_completed))+"% completed")
+            print(str(round(percentage_completed))+"% completed:"+str(method))
             count_down += 1
 
 
     if fail:
-        for x in range(0, 5):
-            print("")
+        http_methods_flag = True
+        print("********************************")
         print("Application is vulnerable to the following methods...")
+        print("")
+        
         for bad_method in fail:
             print("Method: "+bad_method)
-
-        for x in range(0, 5):
-            print("")
 
 
 def test_bleed(url, args):
@@ -119,6 +147,7 @@ def test_bleed(url, args):
         print("[spaces] %s: %s" % (url, repr(allow)))
     else:
         print("[bleed] %s: %s" % (url, repr(allow)))
+        optionsbleed_flag = True
     return True
 
 print(logo+"\n")
@@ -151,18 +180,27 @@ howoften = int(args.n[0])
 if args.url:
 
     if args.methods:
+        print("********************************")
         print("Testing HTTP Methods")
-        test_methods(args.url, args)
-    for x in range(0, 5):
         print("")
-    print("Testing OPTIONSBLEED")
+        
+        test_methods(args.url, args)
+    for x in range(0, 1):
+        print("")
+    print("********************************")
+    print("Testing OPTIONSBLEED\n")
 
-    for i in range(howoften):
+
+    for i in range(howoften):        
             try:
                 if test_bleed(args.url, args) is False:
                     break
+
             except Exception as e:
                 pass
+
+    summary()
+
 
 else:
     for x in range(0, 5):
