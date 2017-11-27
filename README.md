@@ -1,4 +1,4 @@
-optionsbleed
+optionsbleed ++
 ============
 
 This is a proof of concept code to test for the
@@ -19,16 +19,17 @@ positional arguments:
   hosttocheck  The hostname you want to test against
 
 optional arguments:
-  -h, --help   show this help message and exit
-  -n N         number of tests (default 10)
-  -a, --all    show headers from hosts without problems
-  -u, --url    pass URL instead of hostname
-  -c, --cookie Pass cookie value e.g. -c Session=53454bfgb
+  -h, --help    show this help message and exit
+  -n N          number of tests (default 10)
+  -a, --all     show headers from hosts without problems
+  -u, --url     pass URL instead of hostname
+  -c, --cookie  pass cookie value e.g. -c Session=53454bfgb
+  -m, --methods test for malicious HTTP methods
 
 Tests server for Optionsbleed bug and other bugs in the allow header.
+Tests for HTTP methods
+Tests for clickjacking
 
-Automatically checks http://, https://, http://www. and https://www. -
-except if you pass -u/--url (which means by default we check 40 times.)
 </pre>
 
 output explanation
