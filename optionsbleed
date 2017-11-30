@@ -10,12 +10,20 @@ import argparse
 import re
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import os
 
+
+# proxy = 'http://localhost:8080'
+
+# os.environ['http_proxy'] = proxy 
+# os.environ['HTTP_PROXY'] = proxy
+# os.environ['https_proxy'] = proxy
+# os.environ['HTTPS_PROXY'] = proxy
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-#{major}.{minor}.{build}.{patch}
-__version__ = '0.2'
+#{major}.{minor}.{patch}
+__version__ = '0.3'
 logo = """
  __  __ ___  __      __ __     __ __ __             
 /  \|__) | |/  \|\ |(_ |__)|  |_ |_ |  \   _|_  _|_ 
@@ -52,6 +60,15 @@ def summary():
     elif clickjacking_flag != True and http_methods_flag != True and optionsbleed_flag != True:
         print("No issues found")
 
+def sortCookie(c):
+    pair_list = c.split(";")
+    cookie = []
+    dic = {}
+    for pair in pair_list:
+        x = pair.split("=")
+        dic[str(x[0])] = str(x[1])
+
+    return (dic)
 
 def test_methods(url, args):
     global clickjacking_flag
@@ -67,13 +84,17 @@ def test_methods(url, args):
         #count_down = count
         session = args.cookie
         for method in http_methods:
+            cookies = sortCookie(args.cookie)
+            #cookies = {'enwiki_session': '17ab96bd8ffbe8ca58a78657a918558', 'gdg': 'gfgd'}
+            req = requests.request(method.lower(), args.hosttocheck, cookies=cookies,  verify=False)
+            #{'example_cookie_name': 'example_cookie_value'}
 
-            req = requests.request(method.lower(), args.hosttocheck, cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''},  verify=False)
-            if dict(req.headers).get("x-frame-options") is None: # Clickjacking check
+            if dict(req.headers).get("x-frame-options") is None and req.status_code == 200: # Clickjacking check
                 clickjacking_flag = True
 
-            if req.status_code == 200:
+            if req.status_code == 200 and req.content:
                 fail.append(method.lower())
+
 
             percentage_completed = ( count_down / count * 100 / 1 )
             print(str(round(percentage_completed))+"% completed:"+method)
@@ -89,7 +110,7 @@ def test_methods(url, args):
 
         for method in http_methods:
             req = requests.request(method.lower(), args.hosttocheck, verify=False)
-            if dict(req.headers).get("x-frame-options") is None: # Clickjacking check
+            if dict(req.headers).get("x-frame-options") is None and req.status_code == 200: # Clickjacking check
                 clickjacking_flag = True
             if req.status_code == 200:
                 fail.append(method.lower())
@@ -111,13 +132,18 @@ def test_methods(url, args):
 
 def test_bleed(url, args):
 
+
+
     if args.cookie:
         session = args.cookie
 
-        r = requests.options(url , headers = user_agent , cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''}, verify=False)
+
+        r = requests.request("options", args.hosttocheck, cookies={''+session.split('=')[0]+'':''+session.split('=')[1]+''},  verify=False)
+
 
     else:
-        r = requests.options(url , headers = user_agent , verify=False)
+        r = requests.request("options", args.hosttocheck, verify=False)
+
 
 
     raw_headers = r.headers
@@ -185,6 +211,7 @@ if args.url:
         print("")
         
         test_methods(args.url, args)
+
     for x in range(0, 1):
         print("")
     print("********************************")
